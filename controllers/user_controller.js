@@ -18,6 +18,14 @@ router.post('/resetpassword', resetPassword);
 router.post('/getprofile', getProfile);
 router.post('/updateProfile', updateProfile);
 router.post('/uploadImage', uploadImage);
+router.post('/addUserRole', addUserRole);
+router.get('/getUserRole', getUserRole);
+router.post('/getUserRoleById', getUserRoleById);
+router.post('/editUserRole', editUserRole);
+router.post('/deleteUserRole', deleteUserRole);
+router.post('/searchUserRoleData', searchUserRoleData);
+router.get('/userRoleTableCount',userRoleTableCount);
+router.post('/userRoleTablePagination',userRoleTablePagination);
 // router.post('/checkToken', withAuth, function (req, res) {
 //     res.sendStatus(200);
 // });
@@ -385,6 +393,211 @@ function uploadImage(req, res) {
     })
 
 
+}
+
+function addUserRole(req, res) {
+    var userrole = {
+        name: req.body.name,
+        status: req.body.status
+    }
+    // var user_id = req.body.id;
+    console.log("userRoleName,userRoleStatus", userrole, userrole.name, userrole.status);
+    pool.query('INSERT INTO user_role SET ?', userrole, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "addUserRole Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getUserRole(req, res) {
+    pool.query(`SELECT * FROM user_role`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+
+            // const obj = {
+            //     name:results.name,
+            //     status:results.status,
+            //     id:results.id
+            // }
+            res.send({
+                "status": 1,
+                "message": "getUserRole sucessfull",
+                "data": array
+            });
+        }
+    });
+}
+
+function getUserRoleById(req, res) {
+    var user_role_id = req.body.user_role_id;
+    console.log("userroleid", user_role_id);
+    pool.query(`SELECT * FROM user_role WHERE ID = ` + user_role_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            const obj = {
+                name: results[0].name,
+                status: results[0].status,
+                id: results[0].id
+            }
+            res.send({
+                "status": 1,
+                "message": "getUserRole sucessfull",
+                "data": obj
+            });
+        }
+    });
+}
+
+function editUserRole(req, res) {
+    var user_role_id = req.body.id
+    var obj = {
+        name: req.body.name,
+        status: req.body.status
+    }
+    var sql = `UPDATE user_role 
+                SET 
+                    name = '` + obj.name + `',
+                    status = '` + obj.status + `'
+                WHERE ID = ` + user_role_id;
+    console.log("updateProfile sql \r\n " + sql);
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 0,
+                "message": "Userrole Updated Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function deleteUserRole(req, res) {
+    var user_role_id = req.body.user_role_id;
+    console.log("userroleid", user_role_id);
+    var sql = "DELETE FROM user_role WHERE ID = " + user_role_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "UserRole Deleted Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function searchUserRoleData(req, res) {
+    var sql = 'SELECT * FROM user_role WHERE name LIKE "%' + req.body.searchkey + '%"';
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function userRoleTableCount(req,res) {
+    var sql =`SELECT COUNT(*) FROM user_role`;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
+function userRoleTablePagination(req,res) {
+    var page = req.body.pageNumber;
+    console.log("page",page);
+    var dataPerPage = req.body.dataPerPage;
+    console.log("dataPerPage",dataPerPage);
+    var data = (page-1) * dataPerPage;
+    console.log("data",data);
+    var offset = data + ',' + dataPerPage;
+    console.log("offset",offset);
+    pool.query(`SELECT * FROM user_role ORDER BY ID DESC LIMIT ` + offset, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getUserRole sucessfull",
+                "data": array
+            });
+        }
+    });
 }
 
 module.exports = router;
