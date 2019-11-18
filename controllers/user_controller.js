@@ -27,9 +27,7 @@ router.post('/searchUserRoleData', searchUserRoleData);
 router.get('/userRoleTableCount',userRoleTableCount);
 router.post('/userRoleTablePagination',userRoleTablePagination);
 router.post('/deleteUserRoleAllData',deleteUserRoleAllData);
-// router.post('/checkToken', withAuth, function (req, res) {
-//     res.sendStatus(200);
-// });
+router.post('/addUserRight',addUserRight);
 
 //Create User
 function createUser(req, res) {
@@ -625,19 +623,29 @@ function deleteUserRoleAllData(req,res){
     }
 }
 
-module.exports = router;
+function addUserRight(req, res) {
+    var userright = {
+        name: req.body.name,
+        status: req.body.status,
+        module:req.body.module
+    }
+    console.log("userright", userright);
+    pool.query('INSERT INTO user_right SET ?', userright, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "addUserRight Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
 
-// var sql = ` SELECT 
-// u.first_name,
-// u.last_name,
-// u.email,
-// u.password,
-// u.user_type,
-// u.user_role_id,
-// ur.name as user_role_name
-// FROM user as u
-// left user_role as ur on ur.id = u.user_role_id
-// left user_role_to_right as urtr on urtr.role_id = u.user_role_id
-// WHERE 
-// ID = ?
-// `;
+module.exports = router;
