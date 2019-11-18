@@ -26,6 +26,7 @@ router.post('/deleteUserRole', deleteUserRole);
 router.post('/searchUserRoleData', searchUserRoleData);
 router.get('/userRoleTableCount',userRoleTableCount);
 router.post('/userRoleTablePagination',userRoleTablePagination);
+router.post('/deleteUserRoleAllData',deleteUserRoleAllData);
 // router.post('/checkToken', withAuth, function (req, res) {
 //     res.sendStatus(200);
 // });
@@ -598,6 +599,30 @@ function userRoleTablePagination(req,res) {
             });
         }
     });
+}
+
+function deleteUserRoleAllData(req,res){
+    var value = req.body.value;
+    console.log("userroleid", value);
+    if(value == true) {
+        var sql = "DELETE FROM user_role"
+        pool.query(sql, function (error, results, fields) {
+            if (error) {
+                res.send({
+                    "status": 0,
+                    "message": error,
+                    "data": []
+                })
+            } else {
+                console.log("results", results);
+                res.send({
+                    "status": 1,
+                    "message": "UserRole Deleted Sucessfully",
+                    "data": []
+                });
+            }
+        });
+    }
 }
 
 module.exports = router;
