@@ -38,6 +38,7 @@ router.post('/userRightTablePagination', userRightTablePagination);
 router.post('/deleteUserRightAllData', deleteUserRightAllData);
 router.post('/User_Role_to_Right', User_Role_to_Right);
 router.post('/getUserRoleToRight', getUserRoleToRight);
+router.post('/createProject',createProject);
 
 function createUser(req, res) {
     var user = {
@@ -951,6 +952,31 @@ function User_Role_to_Right(req, res) {
             });
         }
     });
+}
+
+function createProject(req,res) {
+    var obj = {
+        title:req.body.title,
+        discription:req.body.discription
+    }
+
+    pool.query('INSERT INTO project SET ?', obj, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "Project Created successfully",
+                "data": results
+            });
+        }
+    });
+
 }
 
 module.exports = router;
