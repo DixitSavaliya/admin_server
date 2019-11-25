@@ -39,7 +39,6 @@ router.post('/deleteUserRightAllData', deleteUserRightAllData);
 router.post('/User_Role_to_Right', User_Role_to_Right);
 router.post('/getUserRoleToRight', getUserRoleToRight);
 
-//Create User
 function createUser(req, res) {
     var user = {
         first_name: req.body.first_name ? req.body.first_name : '',
@@ -89,7 +88,6 @@ function createUser(req, res) {
     }
 }
 
-//Login User
 function loginUser(req, res) {
     var obj = {
         email: req.body.email,
@@ -143,7 +141,6 @@ function loginUser(req, res) {
     });
 }
 
-//changePassword
 function changePassword(req, res) {
     var user_id = req.body.user_id;
     var oldPassword = req.body.oldPassword;
@@ -186,7 +183,6 @@ function changePassword(req, res) {
     }
 }
 
-//forgot password
 function forgotPassword(req, res) {
     var email = req.body.email;
     pool.query(`SELECT * FROM user WHERE email = ?`, [email], function (error, results, fields) {
@@ -809,7 +805,7 @@ function userRightTableCount(req, res) {
     });
 }
 
-function userRightTablePagination(req, res) {   
+function userRightTablePagination(req, res) {
     var page = req.body.pageNumber;
     console.log("page", page);
     var dataPerPage = req.body.dataPerPage;
@@ -866,10 +862,55 @@ function deleteUserRightAllData(req, res) {
 }
 
 function getUserRoleToRight(req, res) {
-    var sql = `SELECT user_right.name,user_right.module,user_right.status
-               FROM user_right 
-               JOIN user_role_to_right
-               ON user_right.id = user_role_to_right.user_right_id`;
+    var sql = `SELECT * , 0 as _read,0 as _write,0 as _delete,0 as _import,0 as _export
+               FROM user_right`;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            var user_role_id = req.body.user_role_id;
+            var sqlquery = `SELECT * FROM user_role_to_right WHERE user_role_id = ` + user_role_id;
+            pool.query(sqlquery, function (error1, results1, fields) {
+                if (error) {
+                    res.send({
+                        "status": 0,
+                        "message": error1,
+                        "data": []
+                    })
+                } else {
+                    for (var i = 0; i < results1.length; i++) {
+                        for (var j = 0; j < results.length; j++) {
+                            if (results[j].id == results1[i].user_right_id) {
+                                results[j].name = results[j].name;
+                                results[j].module = results[j].module;
+                                results[j]._read = results1[i]._read;
+                                results[j]._write = results1[i]._write;
+                                results[j]._delete = results1[i]._delete;
+                                results[j]._import = results1[i]._import;
+                                results[j]._export = results1[i]._export;
+                                console.log("results{}{}", results[j]);
+                            }
+                        }
+                    }
+                    res.send({
+                        "status": 1,
+                        "message": "UserRight Deleted Sucessfully",
+                        "data": results
+                    });
+                }
+            })
+        }
+    })
+}
+
+function User_Role_to_Right(req, res) {
+    var user_role_id = req.body.user_role_id;
+    console.log("userroleid", user_role_id, req.body.data);
+    var sql = "DELETE FROM user_role_to_right WHERE user_role_id = " + user_role_id;
     pool.query(sql, function (error, results, fields) {
         if (error) {
             res.send({
@@ -879,79 +920,38 @@ function getUserRoleToRight(req, res) {
             })
         } else {
             console.log("results", results);
-            var array = [];
-            results.forEach(function (item) {
-                const obj = {
-                    name: item.name,
-                    module: item.module,
-                    status: item.status,
-                    read: 0,
-                    write: 0,
-                    delete: 0,
-                    import: 0,
-                    export: 0
+            var userAllRights = req.body.data;
+            console.log("userallrights", userAllRights);
+            for (var i = 0; i < userAllRights.length; i++) {
+                var user_role_to_right = {
+                    user_role_id: req.body.user_role_id,
+                    user_right_id: userAllRights[i].id,
+                    _read: userAllRights[i]._read,
+                    _write: userAllRights[i]._write,
+                    _delete: userAllRights[i]._delete,
+                    _import: userAllRights[i]._import,
+                    _export: userAllRights[i]._export
                 }
-                array.push(obj);
-            });
-
-            // var q = "UPDATE user_role SET read = ? , write = ? , delete = ? , import = ? , export = ? WHERE entrieId = ?";
-            // pool.query(q, data,function (error, results, fields) {
-            //     if (error) {
-            //         res.send({
-            //             "status": 0,
-            //             "message": error,
-            //             "data": []
-            //         })
-            //     } else {
-            //         res.send({
-            //             "status": 1,
-            //             "message": "getUserRoleToRight sucessfull",
-            //             "data": array
-            //         });
-            //     }
-            // })
-            res.send({
-                "status": 1,
-                "message": "getUserRoleToRight sucessfull",
-                "data": array
-            });
-
-        }
-    })
-
-}
-
-function User_Role_to_Right(req, res) {
-    var user_role_to_right = {
-        user_role_id: req.body.user_role_id,
-        user_right_id: req.body.user_right_id,
-        _read: req.body.read,
-        _write: req.body.write,
-        _delete: req.body.delete,
-        _import: req.body.import,
-        _export: req.body.export
-    }
-    console.log("user_role_to_right", user_role_to_right);
-    pool.query('INSERT INTO user_role_to_right SET ?', user_role_to_right, function (error, results, response) {
-        if (error) {
-            res.send({
-                "status": 0,
-                "message": error,
-                "data": []
-            })
-        } else {
-            console.log("detail", results);
+                pool.query('INSERT INTO user_role_to_right SET ?', user_role_to_right, function (error, results, response) {
+                    if (error) {
+                        res.send({
+                            "status": 0,
+                            "message": error,
+                            "data": []
+                        })
+                    } else {
+                        console.log("detail", results);
+                    }
+                });
+            }
             res.send({
                 "status": 1,
                 "message": "User_Role_to_Right Add Sucessfully",
-                "data": []
+                "data": results
             });
         }
     });
 }
 
-
-
-
-
 module.exports = router;
+
