@@ -38,7 +38,21 @@ router.post('/userRightTablePagination', userRightTablePagination);
 router.post('/deleteUserRightAllData', deleteUserRightAllData);
 router.post('/User_Role_to_Right', User_Role_to_Right);
 router.post('/getUserRoleToRight', getUserRoleToRight);
-router.post('/createProject',createProject);
+router.post('/createProject', createProject);
+router.post('/addTechnology', addTechnology);
+router.post('/getTechnology', getTechnology);
+router.post('/getAllProject', getAllProject);
+router.post('/getAllProjectCount', getAllProjectCount);
+router.post('/getProjectTablePagination', getProjectTablePagination);
+router.post('/deleteProjectById', deleteProjectById);
+router.post('/getProjectById', getProjectById);
+router.post('/editProject', editProject);
+router.post("/searchProjectData", searchProjectData);
+router.post('/createTask', createTask);
+router.post('/getAllTask', getAllTask);
+router.post('/deleteTaskById', deleteTaskById);
+router.post('/getTaskById', getTaskById);
+router.post('/editTask',editTask);
 
 function createUser(req, res) {
     var user = {
@@ -109,20 +123,52 @@ function loginUser(req, res) {
 
                 bcrypt.compare(obj.password, results[0].password, function (err, isMatch) {
                     console.log('password == hash: ', isMatch);
+                    var user_type = req.body.user_type;
+                    console.log("user_type", user_type);
                     if (isMatch) {
-                        const email = obj.email;
-                        const payload = { email };
-                        const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
-                        const userData = {
-                            user: obj,
-                            token: token,
-                            id: results[0].id
+                        if (user_type == 1) {
+                            const email = obj.email;
+                            const payload = { email };
+                            const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
+                            const userData = {
+                                user: obj,
+                                token: token,
+                                id: results[0].id
+                            }
+                            res.send({
+                                "status": 1,
+                                "message": "admin login sucessfull",
+                                "data": userData
+                            });
+                        } else if (user_type == 2) {
+                            const email = obj.email;
+                            const payload = { email };
+                            const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
+                            const userData = {
+                                user: obj,
+                                token: token,
+                                id: results[0].id
+                            }
+                            res.send({
+                                "status": 1,
+                                "message": "projectmanager login sucessfull",
+                                "data": userData
+                            });
+                        } else {
+                            const email = obj.email;
+                            const payload = { email };
+                            const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
+                            const userData = {
+                                user: obj,
+                                token: token,
+                                id: results[0].id
+                            }
+                            res.send({
+                                "status": 1,
+                                "message": "user login sucessfull",
+                                "data": userData
+                            });
                         }
-                        res.send({
-                            "status": 1,
-                            "message": "login sucessfull",
-                            "data": userData
-                        });
                     } else {
                         res.send({
                             "status": 0,
@@ -954,12 +1000,65 @@ function User_Role_to_Right(req, res) {
     });
 }
 
-function createProject(req,res) {
+function addTechnology(req, res) {
     var obj = {
-        title:req.body.title,
-        discription:req.body.discription
+        name: req.body.name
     }
+    pool.query('INSERT INTO technology SET ?', obj, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "Technology Add successfully",
+                "data": results
+            });
+        }
+    });
+}
 
+function getTechnology(req, res) {
+    pool.query(`SELECT * FROM technology`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getTechnology Sucessfully",
+                "data": array
+            });
+        }
+    });
+}
+
+function createProject(req, res) {
+    var then = new Date();
+    var obj = {
+        title: req.body.title,
+        discription: req.body.discription,
+        budget: req.body.budget,
+        project_type: req.body.project_type,
+        hours: req.body.hours,
+        technology_id: req.body.technology_id,
+        owner_id: req.body.owner_id,
+        status: req.body.status,
+        created_date: then
+    }
     pool.query('INSERT INTO project SET ?', obj, function (error, results, response) {
         if (error) {
             res.send({
@@ -976,8 +1075,345 @@ function createProject(req,res) {
             });
         }
     });
-
 }
+
+function getAllProject(req, res) {
+    pool.query(`SELECT * FROM project`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getProject Sucessfully",
+                "data": array
+            });
+        }
+    });
+}
+
+function getAllProjectCount(req, res) {
+    var sql = `SELECT COUNT(*) FROM project`;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
+function getProjectTablePagination(req, res) {
+    var page = req.body.pageNumber;
+    console.log("page", page);
+    var dataPerPage = req.body.dataPerPage;
+    console.log("dataPerPage", dataPerPage);
+    var data = (page - 1) * dataPerPage;
+    console.log("data", data);
+    var offset = data + ',' + dataPerPage;
+    console.log("offset", offset);
+    pool.query(`SELECT * FROM project ORDER BY ID DESC LIMIT ` + offset, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getProject sucessfull",
+                "data": array
+            });
+        }
+    });
+}
+
+function deleteProjectById(req, res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    var sql = "DELETE FROM project WHERE ID = " + project_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Project Deleted Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getProjectById(req, res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    pool.query(`SELECT * FROM project WHERE ID = ` + project_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            const obj = {
+                title: results[0].title,
+                status: results[0].status,
+                id: results[0].id,
+                discription: results[0].discription,
+                budget: results[0].budget,
+                hours: results[0].hours,
+                project_type: results[0].project_type,
+                technology_id: results[0].technology_id
+            }
+            res.send({
+                "status": 1,
+                "message": "getProject sucessfull",
+                "data": obj
+            });
+        }
+    });
+}
+
+function editProject(req, res) {
+    var project_id = req.body.project_id
+    console.log("date", req.body.created_date);
+    var obj = {
+        title: req.body.title,
+        discription: req.body.discription,
+        budget: req.body.budget,
+        project_type: req.body.project_type,
+        hours: req.body.hours,
+        technology_id: req.body.technology_id,
+        owner_id: req.body.owner_id,
+        status: req.body.status,
+        created_date: req.body.created_date
+    }
+    var sql = `UPDATE project
+                SET 
+                    title = '` + obj.title + `',
+                    discription = '` + obj.discription + `',
+                    budget = '` + obj.budget + `',
+                    project_type = '` + obj.project_type + `',
+                    hours = '` + obj.hours + `',
+                    technology_id = '` + obj.technology_id + `',
+                    owner_id = '` + obj.owner_id + `',
+                    status = '` + obj.status + `'
+                WHERE ID = ` + project_id;
+    console.log("project sql \r\n " + sql);
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            console.log("error", error);
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 0,
+                "message": "Project Updated Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function searchProjectData(req, res) {
+    var sql = 'SELECT * FROM project WHERE title LIKE "%' + req.body.searchkey + '%"';
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function createTask(req, res) {
+    var obj = {
+        title: req.body.title,
+        discription: req.body.discription,
+        hours: req.body.hours,
+        user_id: req.body.user_id,
+        project_id: req.body.project_id,
+        status: req.body.status
+    }
+    pool.query('INSERT INTO task_master SET ?', obj, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "Task Created successfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function getAllTask(req, res) {
+    pool.query(`SELECT * FROM task_master`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getTask Sucessfully",
+                "data": array
+            });
+        }
+    });
+}
+
+function deleteTaskById(req, res) {
+    var task_id = req.body.task_id;
+    console.log("project_id", task_id);
+    var sql = "DELETE FROM task_master WHERE ID = " + task_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Task Deleted Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getTaskById(req, res) {
+    var task_id = req.body.task_id;
+    console.log("task_id", task_id);
+    pool.query(`SELECT * FROM task_master WHERE ID = ` + task_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            const obj = {
+                title: results[0].title,
+                status: results[0].status,
+                id: results[0].id,
+                discription: results[0].discription,
+                hours: results[0].hours
+            }
+            array.push(obj);
+            res.send({
+                "status": 1,
+                "message": "getTask sucessfull",
+                "data": array
+            });
+        }
+    });
+}
+
+function editTask(req, res) {
+    var task_id = req.body.task_id
+    console.log("date", req.body.task_id);
+    var obj = {
+        title: req.body.title,
+        discription: req.body.discription,
+        hours: req.body.hours,
+        user_id: req.body.user_id,
+        project_id: req.body.project_id,
+        status: req.body.status
+    }
+    var sql = `UPDATE task_master
+                SET 
+                    title = '` + obj.title + `',
+                    discription = '` + obj.discription + `',
+                    hours = '` + obj.hours + `',
+                    user_id = '` + obj.user_id + `',
+                    project_id = '` + obj.project_id + `',
+                    status = '` + obj.status + `'
+                WHERE ID = ` + task_id;
+    console.log("project sql \r\n " + sql);
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            console.log("error", error);
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 0,
+                "message": "Task Updated Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
 
 module.exports = router;
 
