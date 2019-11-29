@@ -52,14 +52,29 @@ router.post('/createTask', createTask);
 router.post('/getAllTask', getAllTask);
 router.post('/deleteTaskById', deleteTaskById);
 router.post('/getTaskById', getTaskById);
-router.post('/editTask',editTask);
+router.post('/editTask', editTask);
+router.post('/getTaskByProjectId', getTaskByProjectId);
+router.post('/searchTaskData', searchTaskData);
+router.post('/getAllTaskCount', getAllTaskCount);
+router.post('/getTaskTablePagination', getTaskTablePagination);
+router.post('/getALlProjectManager', getALlProjectManager);
+router.post('/assignProject', assignProject);
+router.post('/getProjectManagerByProjectId', getProjectManagerByProjectId);
+router.post('/deleteAssignProjectById', deleteAssignProjectById);
+router.post('/getAssignProjectById', getAssignProjectById);
+router.post('/editAssignProject', editAssignProject);
+router.post('/getassignProjectCount', getassignProjectCount);
+router.post('/searchAssignProjectData', searchAssignProjectData);
+router.post('/getAssignProjectTablePagination',getAssignProjectTablePagination);
 
 function createUser(req, res) {
     var user = {
         first_name: req.body.first_name ? req.body.first_name : '',
         last_name: req.body.last_name ? req.body.last_name : '',
         email: req.body.email ? req.body.email : '',
-        password: req.body.password ? req.body.password : ''
+        password: req.body.password ? req.body.password : '',
+        mobile_number: req.body.mobile_number ? req.body.mobile_number : '',
+        gender: req.body.gender ? req.body.gender : ''
     };
 
     if (user.email && user.password) {
@@ -71,6 +86,7 @@ function createUser(req, res) {
             console.log("detail--", detail);
             pool.query('INSERT INTO user SET ?', detail, function (error, results, response) {
                 if (error) {
+                    console.log("error", error);
                     res.send({
                         "status": 0,
                         "message": error,
@@ -86,9 +102,10 @@ function createUser(req, res) {
                         token: token,
                         userId: detail.id
                     }
+                    console.log("userdata", userData);
                     res.send({
                         "status": 1,
-                        "message": "admin login sucessfully",
+                        "message": "createUser sucessfully",
                         "data": userData
                     });
                 }
@@ -120,7 +137,6 @@ function loginUser(req, res) {
             console.log("results", results[0].password);
             if (results.length > 0) {
                 let salt = 1;
-
                 bcrypt.compare(obj.password, results[0].password, function (err, isMatch) {
                     console.log('password == hash: ', isMatch);
                     var user_type = req.body.user_type;
@@ -154,7 +170,7 @@ function loginUser(req, res) {
                                 "message": "projectmanager login sucessfull",
                                 "data": userData
                             });
-                        } else {
+                        } else if (user_type == 3) {
                             const email = obj.email;
                             const payload = { email };
                             const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
@@ -167,6 +183,12 @@ function loginUser(req, res) {
                                 "status": 1,
                                 "message": "user login sucessfull",
                                 "data": userData
+                            });
+                        } else {
+                            res.send({
+                                "status": 0,
+                                "message": "Something Wrong",
+                                "data": []
                             });
                         }
                     } else {
@@ -1409,6 +1431,320 @@ function editTask(req, res) {
                 "status": 0,
                 "message": "Task Updated Sucessfully",
                 "data": []
+            });
+        }
+    });
+}
+
+function getTaskByProjectId(req, res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    pool.query(`SELECT * FROM task_master WHERE project_id = ` + project_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getTask sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function searchTaskData(req, res) {
+    var sql = 'SELECT * FROM task_master WHERE title LIKE "%' + req.body.searchkey + '%" AND project_id = ' + req.body.project_id
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function getAllTaskCount(req, res) {
+    var sql = `SELECT COUNT(*) FROM task_master WHERE project_id = ` + req.body.project_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
+function getTaskTablePagination(req, res) {
+    var page = req.body.pageNumber;
+    console.log("page", page);
+    var dataPerPage = req.body.dataPerPage;
+    console.log("dataPerPage", dataPerPage);
+    var data = (page - 1) * dataPerPage;
+    console.log("data", data);
+    var offset = data + ',' + dataPerPage;
+    console.log("offset", offset);
+    pool.query(`SELECT * FROM task_master WHERE project_id = ` + req.body.project_id + ` ORDER BY ID DESC LIMIT ` + offset, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getTask sucessfull",
+                "data": array
+            });
+        }
+    });
+}
+
+function getALlProjectManager(req, res) {
+    pool.query(`SELECT * FROM user WHERE user_type =` + req.body.user_type, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getProjectManager sucessfull",
+                "data": array
+            });
+        }
+    });
+}
+
+function assignProject(req, res) {
+    var obj = {
+        name: req.body.name,
+        hours: req.body.hours,
+        user_id: req.body.user_id,
+        project_id: req.body.project_id
+    }
+    pool.query('INSERT INTO project_assign_master SET ?', obj, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results);
+            res.send({
+                "status": 1,
+                "message": "Project Assign successfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function getProjectManagerByProjectId(req, res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    pool.query(`SELECT * FROM project_assign_master WHERE project_id = ` + project_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getProjectAssignData sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function deleteAssignProjectById(req, res) {
+    var project_assign_id = req.body.project_assign_id;
+    console.log("project_assign_id", project_assign_id);
+    var sql = "DELETE FROM project_assign_master WHERE ID = " + project_assign_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "assignProject Deleted Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getAssignProjectById(req, res) {
+    var project_assign_id = req.body.project_assign_id;
+    console.log("project_assign_id", project_assign_id);
+    pool.query(`SELECT * FROM project_assign_master WHERE ID = ` + project_assign_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getAssignProject sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function editAssignProject(req, res) {
+    var project_assign_id = req.body.project_assign_id
+    console.log("project_assign_id", project_assign_id);
+    var obj = {
+        name: req.body.name,
+        hours: req.body.hours,
+        user_id: req.body.user_id,
+        project_id: req.body.project_id
+    }
+    var sql = `UPDATE project_assign_master
+                SET 
+                    name = '` + obj.name + `',
+                    hours = '` + obj.hours + `',
+                    user_id = '` + obj.user_id + `',
+                    project_id = '` + obj.project_id + `'
+                WHERE ID = ` + project_assign_id;
+    console.log("project sql \r\n " + sql);
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            console.log("error", error);
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 0,
+                "message": "AssignProject Updated Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getassignProjectCount(req, res) {
+    var sql = `SELECT COUNT(*) FROM project_assign_master WHERE project_id = ` + req.body.project_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
+function searchAssignProjectData(req, res) {
+    var sql = 'SELECT * FROM project_assign_master WHERE name LIKE "%' + req.body.searchkey + '%" AND project_id = ' + req.body.project_id
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results
+            });
+        }
+    });
+}
+
+function getAssignProjectTablePagination(req, res) {
+    var page = req.body.pageNumber;
+    console.log("page", page);
+    var dataPerPage = req.body.dataPerPage;
+    console.log("dataPerPage", dataPerPage);
+    var data = (page - 1) * dataPerPage;
+    console.log("data", data);
+    var offset = data + ',' + dataPerPage;
+    console.log("offset", offset);
+    pool.query(`SELECT * FROM project_assign_master WHERE project_id = ` + req.body.project_id + ` ORDER BY ID DESC LIMIT ` + offset, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            var array = [];
+            results.forEach(function (item) {
+                array.push(item);
+            });
+            console.log("array", array);
+            res.send({
+                "status": 1,
+                "message": "getAssignProject sucessfull",
+                "data": array
             });
         }
     });
