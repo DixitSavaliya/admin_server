@@ -65,7 +65,14 @@ router.post('/getAssignProjectById', getAssignProjectById);
 router.post('/editAssignProject', editAssignProject);
 router.post('/getassignProjectCount', getassignProjectCount);
 router.post('/searchAssignProjectData', searchAssignProjectData);
-router.post('/getAssignProjectTablePagination',getAssignProjectTablePagination);
+router.post('/getAssignProjectTablePagination', getAssignProjectTablePagination);
+router.post('/getAllUser',getAllUser);
+router.post('/getUserById',getUserById);
+router.post('/editUser',editUser);
+router.post('/deleteUser',deleteUser);
+router.post('/searchUser',searchUser);
+router.post('/getUserTableCount',getUserTableCount);
+router.post('/userTablePagination',userTablePagination);
 
 function createUser(req, res) {
     var user = {
@@ -74,8 +81,11 @@ function createUser(req, res) {
         email: req.body.email ? req.body.email : '',
         password: req.body.password ? req.body.password : '',
         mobile_number: req.body.mobile_number ? req.body.mobile_number : '',
-        gender: req.body.gender ? req.body.gender : ''
+        gender: req.body.status ? req.body.status : '',
+        user_type: req.body.user_type ? req.body.user_type : '',
+        user_role:req.body.Role ? req.body.Role : ''
     };
+    console.log("user",user);
 
     if (user.email && user.password) {
         let salt = 1;
@@ -123,7 +133,8 @@ function createUser(req, res) {
 function loginUser(req, res) {
     var obj = {
         email: req.body.email,
-        password: req.body.password
+        password: req.body.password,
+        user_type: req.body.user_type
     }
 
     pool.query('SELECT * FROM user WHERE email = ?', [obj.email], function (error, results, fields) {
@@ -139,10 +150,9 @@ function loginUser(req, res) {
                 let salt = 1;
                 bcrypt.compare(obj.password, results[0].password, function (err, isMatch) {
                     console.log('password == hash: ', isMatch);
-                    var user_type = req.body.user_type;
-                    console.log("user_type", user_type);
                     if (isMatch) {
-                        if (user_type == 1) {
+                        console.log("usertype", obj.user_type, results[0].user_type);
+                        if (obj.user_type == results[0].user_type) {
                             const email = obj.email;
                             const payload = { email };
                             const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
@@ -153,35 +163,7 @@ function loginUser(req, res) {
                             }
                             res.send({
                                 "status": 1,
-                                "message": "admin login sucessfull",
-                                "data": userData
-                            });
-                        } else if (user_type == 2) {
-                            const email = obj.email;
-                            const payload = { email };
-                            const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
-                            const userData = {
-                                user: obj,
-                                token: token,
-                                id: results[0].id
-                            }
-                            res.send({
-                                "status": 1,
-                                "message": "projectmanager login sucessfull",
-                                "data": userData
-                            });
-                        } else if (user_type == 3) {
-                            const email = obj.email;
-                            const payload = { email };
-                            const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
-                            const userData = {
-                                user: obj,
-                                token: token,
-                                id: results[0].id
-                            }
-                            res.send({
-                                "status": 1,
-                                "message": "user login sucessfull",
+                                "message": "login sucessfull",
                                 "data": userData
                             });
                         } else {
@@ -209,6 +191,179 @@ function loginUser(req, res) {
         }
     });
 }
+
+function getAllUser(req,res) {
+    pool.query(`SELECT * FROM user`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getUses sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function getUserById(req,res) {
+    var id = req.body.id;
+    pool.query(`SELECT * FROM user WHERE ID = ` + id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getUser sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function editUser(req, res) {
+    var user_id = req.body.id
+    var obj = {
+        first_name: req.body.first_name ? req.body.first_name : '',
+        last_name: req.body.last_name ? req.body.last_name : '',
+        email: req.body.email ? req.body.email : '',
+        password: req.body.password ? req.body.password : '',
+        mobile_number: req.body.mobile_number ? req.body.mobile_number : '',
+        gender: req.body.status ? req.body.status : '',
+        user_type: req.body.user_type ? req.body.user_type : '',
+        user_role:req.body.Role ? req.body.Role : ''
+    };
+
+    var sql = `UPDATE user
+                SET 
+                first_name = '` + obj.first_name + `',
+                last_name = '` + obj.last_name + `',
+                email = '` + obj.email + `',
+                password = '` + obj.password + `',
+                mobile_number = '` + obj.mobile_number + `',
+                gender = '` + obj.gender + `',
+                user_type = '` + obj.user_type + `',
+                user_role = '` + obj.user_role + `'
+                WHERE ID = ` + user_id;
+    console.log("user sql \r\n " + sql);
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            console.log("error", error);
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 0,
+                "message": "User Edited Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function deleteUser(req, res) {
+    var user_id = req.body.user_id;
+    var sql = "DELETE FROM user WHERE ID = " + user_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "User Deleted Sucessfully",
+                "data": []
+            });
+        }
+    });
+}
+
+function getUserTableCount(req,res) {
+    var sql = `SELECT COUNT(*) FROM user`;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
+function userTablePagination(req, res) {
+    var page = req.body.pageNumber;
+    console.log("page", page);
+    var dataPerPage = req.body.dataPerPage;
+    console.log("dataPerPage", dataPerPage);
+    var data = (page - 1) * dataPerPage;
+    console.log("data", data);
+    var offset = data + ',' + dataPerPage;
+    console.log("offset", offset);
+    pool.query(`SELECT * FROM user ORDER BY ID DESC LIMIT ` + offset, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+         
+            res.send({
+                "status": 1,
+                "message": "getUsers sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function searchUser(req,res) {
+    var sql = 'SELECT * FROM user WHERE first_name LIKE "%' + req.body.searchkey + '%"';
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results
+            });
+        }
+    });
+}
+
 
 function changePassword(req, res) {
     var user_id = req.body.user_id;
