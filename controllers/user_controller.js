@@ -8,6 +8,8 @@ const secret = "secret";
 const withAuth = require('./authenticate/authenticate.js');
 var nodemailer = require('nodemailer');
 var upload = require('express-fileupload');
+var dateFormat = require('dateformat');
+
 router.use(upload());
 // For OAuth
 router.post('/loginUser', loginUser);
@@ -66,13 +68,14 @@ router.post('/editAssignProject', editAssignProject);
 router.post('/getassignProjectCount', getassignProjectCount);
 router.post('/searchAssignProjectData', searchAssignProjectData);
 router.post('/getAssignProjectTablePagination', getAssignProjectTablePagination);
-router.post('/getAllUser',getAllUser);
-router.post('/getUserById',getUserById);
-router.post('/editUser',editUser);
-router.post('/deleteUser',deleteUser);
-router.post('/searchUser',searchUser);
-router.post('/getUserTableCount',getUserTableCount);
-router.post('/userTablePagination',userTablePagination);
+router.post('/getAllUser', getAllUser);
+router.post('/getUserById', getUserById);
+router.post('/editUser', editUser);
+router.post('/deleteUser', deleteUser);
+router.post('/searchUser', searchUser);
+router.post('/getUserTableCount', getUserTableCount);
+router.post('/userTablePagination', userTablePagination);
+router.post('/getAllUserByType', getAllUserByType);
 
 function createUser(req, res) {
     var user = {
@@ -83,9 +86,9 @@ function createUser(req, res) {
         mobile_number: req.body.mobile_number ? req.body.mobile_number : '',
         gender: req.body.status ? req.body.status : '',
         user_type: req.body.user_type ? req.body.user_type : '',
-        user_role:req.body.Role ? req.body.Role : ''
+        user_role: req.body.Role ? req.body.Role : ''
     };
-    console.log("user",user);
+    console.log("user", user);
 
     if (user.email && user.password) {
         let salt = 1;
@@ -134,7 +137,8 @@ function loginUser(req, res) {
     var obj = {
         email: req.body.email,
         password: req.body.password,
-        user_type: req.body.user_type
+        user_type: req.body.user_type,
+        user_role: req.body.user_role
     }
 
     pool.query('SELECT * FROM user WHERE email = ?', [obj.email], function (error, results, fields) {
@@ -152,7 +156,7 @@ function loginUser(req, res) {
                     console.log('password == hash: ', isMatch);
                     if (isMatch) {
                         console.log("usertype", obj.user_type, results[0].user_type);
-                        if (obj.user_type == results[0].user_type) {
+                        if (obj.user_type == results[0].user_type && obj.user_role == results[0].user_role) {
                             const email = obj.email;
                             const payload = { email };
                             const token = jwttoken.sign(payload, secret, { expiresIn: '1h' });
@@ -192,7 +196,7 @@ function loginUser(req, res) {
     });
 }
 
-function getAllUser(req,res) {
+function getAllUser(req, res) {
     pool.query(`SELECT * FROM user`, function (error, results, fields) {
         if (error) {
             res.send({
@@ -211,7 +215,26 @@ function getAllUser(req,res) {
     });
 }
 
-function getUserById(req,res) {
+function getAllUserByType(req, res) {
+    pool.query(`SELECT * FROM user WHERE user_type = 3`, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getUses sucessfull",
+                "data": results
+            });
+        }
+    });
+}
+
+function getUserById(req, res) {
     var id = req.body.id;
     pool.query(`SELECT * FROM user WHERE ID = ` + id, function (error, results, fields) {
         if (error) {
@@ -241,38 +264,78 @@ function editUser(req, res) {
         mobile_number: req.body.mobile_number ? req.body.mobile_number : '',
         gender: req.body.status ? req.body.status : '',
         user_type: req.body.user_type ? req.body.user_type : '',
-        user_role:req.body.Role ? req.body.Role : ''
+        user_role: req.body.Role ? req.body.Role : ''
     };
 
-    var sql = `UPDATE user
-                SET 
-                first_name = '` + obj.first_name + `',
-                last_name = '` + obj.last_name + `',
-                email = '` + obj.email + `',
-                password = '` + obj.password + `',
-                mobile_number = '` + obj.mobile_number + `',
-                gender = '` + obj.gender + `',
-                user_type = '` + obj.user_type + `',
-                user_role = '` + obj.user_role + `'
-                WHERE ID = ` + user_id;
-    console.log("user sql \r\n " + sql);
-    pool.query(sql, function (error, results, fields) {
-        if (error) {
-            console.log("error", error);
-            res.send({
-                "status": 0,
-                "message": error,
-                "data": []
-            })
-        } else {
-            console.log("results", results);
-            res.send({
-                "status": 0,
-                "message": "User Edited Sucessfully",
-                "data": []
+    console.log("obj.password",obj.password);
+    
+    if (obj.password == null || obj.password == "") {
+        var sql = `UPDATE user
+                    SET 
+                    first_name = '` + obj.first_name + `',
+                    last_name = '` + obj.last_name + `',
+                    email = '` + obj.email + `',
+                    mobile_number = '` + obj.mobile_number + `',
+                    gender = '` + obj.gender + `',
+                    user_type = '` + obj.user_type + `',
+                    user_role = '` + obj.user_role + `'
+                    WHERE ID = ` + user_id;
+        console.log("user sql \r\n " + sql);
+        pool.query(sql, function (error, results, fields) {
+            if (error) {
+                console.log("error", error);
+                res.send({
+                    "status": 0,
+                    "message": error,
+                    "data": []
+                })
+            } else {
+                console.log("results", results);
+                res.send({
+                    "status": 0,
+                    "message": "User Edited Sucessfully",
+                    "data": []
+                });
+            }
+        });
+    } else {
+
+        let salt = 1;
+        bcrypt.hash(obj.password, salt, function (err, hash) {
+            console.log("hash--", hash);
+            obj.password = hash;
+
+            var sql = `UPDATE user
+            SET 
+            first_name = '` + obj.first_name + `',
+            last_name = '` + obj.last_name + `',
+            email = '` + obj.email + `',
+            password = '` + obj.password + `',
+            mobile_number = '` + obj.mobile_number + `',
+            gender = '` + obj.gender + `',
+            user_type = '` + obj.user_type + `',
+            user_role = '` + obj.user_role + `'
+            WHERE ID = ` + user_id;
+            console.log("user sql \r\n " + sql);
+            pool.query(sql, function (error, results, fields) {
+                if (error) {
+                    console.log("error", error);
+                    res.send({
+                        "status": 0,
+                        "message": error,
+                        "data": []
+                    })
+                } else {
+                    console.log("results", results);
+                    res.send({
+                        "status": 0,
+                        "message": "User Edited Sucessfully",
+                        "data": []
+                    });
+                }
             });
+        })
         }
-    });
 }
 
 function deleteUser(req, res) {
@@ -296,7 +359,7 @@ function deleteUser(req, res) {
     });
 }
 
-function getUserTableCount(req,res) {
+function getUserTableCount(req, res) {
     var sql = `SELECT COUNT(*) FROM user`;
     pool.query(sql, function (error, results, fields) {
         if (error) {
@@ -334,7 +397,7 @@ function userTablePagination(req, res) {
             })
         } else {
             console.log("results", results);
-         
+
             res.send({
                 "status": 1,
                 "message": "getUsers sucessfull",
@@ -344,7 +407,7 @@ function userTablePagination(req, res) {
     });
 }
 
-function searchUser(req,res) {
+function searchUser(req, res) {
     var sql = 'SELECT * FROM user WHERE first_name LIKE "%' + req.body.searchkey + '%"';
     pool.query(sql, function (error, results, fields) {
         if (error) {
@@ -1200,7 +1263,8 @@ function addTechnology(req, res) {
 }
 
 function getTechnology(req, res) {
-    pool.query(`SELECT * FROM technology`, function (error, results, fields) {
+    var sql = 'SELECT * FROM technology WHERE name LIKE "%' + req.body.searchkey + '%"';
+    pool.query(sql, function (error, results, fields) {
         if (error) {
             res.send({
                 "status": 0,
@@ -1224,7 +1288,8 @@ function getTechnology(req, res) {
 }
 
 function createProject(req, res) {
-    var then = new Date();
+    var date = new Date().toLocaleDateString();
+    console.log("date", date);
     var obj = {
         title: req.body.title,
         discription: req.body.discription,
@@ -1234,7 +1299,7 @@ function createProject(req, res) {
         technology_id: req.body.technology_id,
         owner_id: req.body.owner_id,
         status: req.body.status,
-        created_date: then
+        created_date: date
     }
     pool.query('INSERT INTO project SET ?', obj, function (error, results, response) {
         if (error) {
