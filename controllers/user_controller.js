@@ -268,7 +268,7 @@ function editUser(req, res) {
     };
 
     console.log("obj.password",obj.password);
-    
+
     if (obj.password == null || obj.password == "") {
         var sql = `UPDATE user
                     SET 
@@ -1242,7 +1242,8 @@ function User_Role_to_Right(req, res) {
 
 function addTechnology(req, res) {
     var obj = {
-        name: req.body.name
+        name: req.body.name,
+        project_id: req.body.project_id
     }
     pool.query('INSERT INTO technology SET ?', obj, function (error, results, response) {
         if (error) {
