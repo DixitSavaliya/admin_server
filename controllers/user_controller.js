@@ -76,6 +76,7 @@ router.post('/searchUser', searchUser);
 router.post('/getUserTableCount', getUserTableCount);
 router.post('/userTablePagination', userTablePagination);
 router.post('/getAllUserByType', getAllUserByType);
+router.post('/getTechnologyNameById', getTechnologyNameById);
 
 function createUser(req, res) {
     var user = {
@@ -267,7 +268,7 @@ function editUser(req, res) {
         user_role: req.body.Role ? req.body.Role : ''
     };
 
-    console.log("obj.password",obj.password);
+    console.log("obj.password", obj.password);
 
     if (obj.password == null || obj.password == "") {
         var sql = `UPDATE user
@@ -335,7 +336,7 @@ function editUser(req, res) {
                 }
             });
         })
-        }
+    }
 }
 
 function deleteUser(req, res) {
@@ -1288,21 +1289,11 @@ function getTechnology(req, res) {
     });
 }
 
-function createProject(req, res) {
-    var date = new Date().toLocaleDateString();
-    console.log("date", date);
-    var obj = {
-        title: req.body.title,
-        discription: req.body.discription,
-        budget: req.body.budget,
-        project_type: req.body.project_type,
-        hours: req.body.hours,
-        technology_id: req.body.technology_id,
-        owner_id: req.body.owner_id,
-        status: req.body.status,
-        created_date: date
-    }
-    pool.query('INSERT INTO project SET ?', obj, function (error, results, response) {
+function getTechnologyNameById(req, res) {
+    var technology_id = req.body.technology_id;
+    console.log("technology_id", technology_id);
+    var sql = 'SELECT * FROM technology'
+    pool.query(sql, function (error, results, fields) {
         if (error) {
             res.send({
                 "status": 0,
@@ -1310,7 +1301,61 @@ function createProject(req, res) {
                 "data": []
             })
         } else {
-            console.log("detail", results);
+            console.log("results", results);
+            var finalarray = results.filter(function (obj) {
+                return technology_id.indexOf(obj.id) !== -1;
+            });
+            console.log("finalarray{}", finalarray);
+            res.send({
+                "status": 1,
+                "message": "getTechnology Sucessfully",
+                "data": finalarray
+            });
+        }
+    });
+}
+
+function createProject(req, res) {
+    var date = new Date();
+    console.log("date", date);
+    var obj = {
+        title: req.body.title,
+        discription: req.body.discription,
+        budget: req.body.budget,
+        project_type: req.body.project_type,
+        hours: req.body.hours,
+        owner_id: req.body.owner_id,
+        status: req.body.status,
+        created_date: date
+    }
+    pool.query("INSERT INTO project SET ? ", obj, function (error, results, response) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("detail", results.insertId);
+            var technology = req.body.technology_id;
+            console.log("technology", technology);
+            for (var i = 0; i < technology.length; i++) {
+                var object = {
+                    technology_id: technology[i],
+                    project_id: results.insertId
+                }
+                pool.query("INSERT INTO project_technology_mapping SET ? ", object, function (error, resultsTech, response) {
+                    if (error) {
+                        res.send({
+                            "status": 0,
+                            "message": error,
+                            "data": []
+                        })
+                    } else {
+                        console.log("resultsTech", resultsTech);
+                    }
+                })
+            }
             res.send({
                 "status": 1,
                 "message": "Project Created successfully",
@@ -1430,21 +1475,26 @@ function getProjectById(req, res) {
             })
         } else {
             console.log("results", results);
-            const obj = {
-                title: results[0].title,
-                status: results[0].status,
-                id: results[0].id,
-                discription: results[0].discription,
-                budget: results[0].budget,
-                hours: results[0].hours,
-                project_type: results[0].project_type,
-                technology_id: results[0].technology_id
-            }
-            res.send({
-                "status": 1,
-                "message": "getProject sucessfull",
-                "data": obj
-            });
+            pool.query(`SELECT * FROM project_technology_mapping WHERE project_id = ` + project_id, function (error, result, fields) {
+                if (error) {
+                    res.send({
+                        "status": 0,
+                        "message": error,
+                        "data": []
+                    })
+                } else {
+                    console.log("result", result);
+                    const obj = {
+                        projectData: results,
+                        technologyData: result
+                    }
+                    res.send({
+                        "status": 1,
+                        "message": "getProject sucessfull",
+                        "data": obj
+                    });
+                }
+            })
         }
     });
 }
@@ -1470,7 +1520,6 @@ function editProject(req, res) {
                     budget = '` + obj.budget + `',
                     project_type = '` + obj.project_type + `',
                     hours = '` + obj.hours + `',
-                    technology_id = '` + obj.technology_id + `',
                     owner_id = '` + obj.owner_id + `',
                     status = '` + obj.status + `'
                 WHERE ID = ` + project_id;
@@ -1485,6 +1534,37 @@ function editProject(req, res) {
             })
         } else {
             console.log("results", results);
+            var sql = "DELETE FROM project_technology_mapping WHERE project_id = " + project_id;
+            pool.query(sql, function (error, results1, fields) {
+                if (error) {
+                    res.send({
+                        "status": 0,
+                        "message": error,
+                        "data": []
+                    })
+                } else {
+                    console.log("result1",results1);
+                    var technology = req.body.technology_id;
+                    console.log("technology", technology);
+                    for (var i = 0; i < technology.length; i++) {
+                        var object = {
+                            technology_id: technology[i],
+                            project_id: req.body.project_id
+                        }
+                        pool.query("INSERT INTO project_technology_mapping SET ? ", object, function (error, resultsTech, response) {
+                            if (error) {
+                                res.send({
+                                    "status": 0,
+                                    "message": error,
+                                    "data": []
+                                })
+                            } else {
+                                console.log("resultsTech", resultsTech);
+                            }
+                        })
+                    }
+                }
+            });
             res.send({
                 "status": 0,
                 "message": "Project Updated Sucessfully",
