@@ -21,21 +21,21 @@ router.post('/getprofile', getProfile);
 router.post('/updateProfile', updateProfile);
 router.post('/uploadImage', uploadImage);
 router.post('/addUserRole', addUserRole);
-router.get('/getUserRole', getUserRole);
+router.post('/getUserRole', getUserRole);
 router.post('/getUserRoleById', getUserRoleById);
 router.post('/editUserRole', editUserRole);
 router.post('/deleteUserRole', deleteUserRole);
 router.post('/searchUserRoleData', searchUserRoleData);
-router.get('/userRoleTableCount', userRoleTableCount);
+router.post('/userRoleTableCount', userRoleTableCount);
 router.post('/userRoleTablePagination', userRoleTablePagination);
 router.post('/deleteUserRoleAllData', deleteUserRoleAllData);
 router.post('/addUserRight', addUserRight);
-router.get('/getUserRight', getUserRight);
+router.post('/getUserRight', getUserRight);
 router.post('/getUserRightById', getUserRightById);
 router.post('/editUserRight', editUserRight);
 router.post('/deleteUserRight', deleteUserRight);
 router.post('/searchUserRightData', searchUserRightData);
-router.get('/userRightTableCount', userRightTableCount);
+router.post('/userRightTableCount', userRightTableCount);
 router.post('/userRightTablePagination', userRightTablePagination);
 router.post('/deleteUserRightAllData', deleteUserRightAllData);
 router.post('/User_Role_to_Right', User_Role_to_Right);
@@ -607,7 +607,8 @@ function getProfile(req, res) {
                 first_name: results[0].first_name,
                 last_name: results[0].last_name,
                 email: results[0].email,
-                filename: results[0].filename
+                filename: results[0].filename,
+                mobile_number: results[0].mobile_number
             }
             res.send({
                 "status": 1,
@@ -623,14 +624,16 @@ function updateProfile(req, res) {
     var obj = {
         first_name: req.body.first_name,
         last_name: req.body.last_name,
-        email: req.body.email
+        email: req.body.email,
+        mobile_number:req.body.mobile_number
     }
 
     var sql = ` UPDATE user 
                 SET 
                     first_name = '` + obj.first_name + `',
                     last_name = '` + obj.last_name + `',
-                    email = '` + obj.email + `'
+                    email = '` + obj.email + `',
+                    mobile_number = '` + obj.mobile_number + `'
                 WHERE ID = ` + user_id;
     console.log("updateProfile sql \r\n " + sql);
     pool.query(sql, function (error, results, fields) {
