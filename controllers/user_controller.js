@@ -77,6 +77,7 @@ router.post('/getUserTableCount', getUserTableCount);
 router.post('/userTablePagination', userTablePagination);
 router.post('/getAllUserByType', getAllUserByType);
 router.post('/getTechnologyNameById', getTechnologyNameById);
+router.post('/deleteTechnologies',deleteTechnologies);
 
 function createUser(req, res) {
     var user = {
@@ -958,11 +959,7 @@ function getUserRight(req, res) {
             });
             console.log("array", array);
 
-            // const obj = {
-            //     name:results.name,
-            //     status:results.status,
-            //     id:results.id
-            // }
+            
             res.send({
                 "status": 1,
                 "message": "getUserRight Sucessfully",
@@ -1243,8 +1240,7 @@ function User_Role_to_Right(req, res) {
 
 function addTechnology(req, res) {
     var obj = {
-        name: req.body.name,
-        project_id: req.body.project_id
+        name: req.body.name
     }
     pool.query('INSERT INTO technology SET ?', obj, function (error, results, response) {
         if (error) {
@@ -1572,6 +1568,41 @@ function editProject(req, res) {
             });
         }
     });
+}
+
+function deleteTechnologies(req,res) {
+    var project_id = req.body.project_id;
+    var sql = "DELETE FROM project_technology_mapping WHERE project_id = " + project_id;
+            pool.query(sql, function (error, results1, fields) {
+                if (error) {
+                    res.send({
+                        "status": 0,
+                        "message": error,
+                        "data": []
+                    })
+                } else {
+                    console.log("result1",results1);
+                    var technology = req.body.technology_id;
+                    console.log("technology", technology);
+                    for (var i = 0; i < technology.length; i++) {
+                        var object = {
+                            technology_id: technology[i],
+                            project_id: req.body.project_id
+                        }
+                        pool.query("INSERT INTO project_technology_mapping SET ? ", object, function (error, resultsTech, response) {
+                            if (error) {
+                                res.send({
+                                    "status": 0,
+                                    "message": error,
+                                    "data": []
+                                })
+                            } else {
+                                console.log("resultsTech", resultsTech);
+                            }
+                        })
+                    }
+                }
+            });
 }
 
 function searchProjectData(req, res) {
