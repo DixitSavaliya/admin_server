@@ -78,6 +78,8 @@ router.post('/userTablePagination', userTablePagination);
 router.post('/getAllUserByType', getAllUserByType);
 router.post('/getTechnologyNameById', getTechnologyNameById);
 router.post('/deleteTechnologies',deleteTechnologies);
+router.post('/getCounts',getCounts);
+router.post('/getTaskByProjectIdCounts',getTaskByProjectIdCounts);
 
 function createUser(req, res) {
     var user = {
@@ -1792,6 +1794,27 @@ function getTaskByProjectId(req, res) {
     });
 }
 
+function getTaskByProjectIdCounts(req, res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    pool.query(`SELECT COUNT(*) FROM task_master WHERE project_id = ` + project_id, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results);
+            res.send({
+                "status": 1,
+                "message": "getCount sucessfull",
+                "data": results[0]['COUNT(*)']
+            });
+        }
+    });
+}
+
 function searchTaskData(req, res) {
     var sql = 'SELECT * FROM task_master WHERE title LIKE "%' + req.body.searchkey + '%" AND project_id = ' + req.body.project_id
     pool.query(sql, function (error, results, fields) {
@@ -1929,6 +1952,28 @@ function getProjectManagerByProjectId(req, res) {
                 "status": 1,
                 "message": "getProjectAssignData sucessfull",
                 "data": results
+            });
+        }
+    });
+}
+
+function getCounts(req,res) {
+    var project_id = req.body.project_id;
+    console.log("project_id", project_id);
+    var sql = `SELECT COUNT(*) FROM  project_assign_master WHERE project_id = ` + project_id;
+    pool.query(sql, function (error, results, fields) {
+        if (error) {
+            res.send({
+                "status": 0,
+                "message": error,
+                "data": []
+            })
+        } else {
+            console.log("results", results[0]['COUNT(*)']);
+            res.send({
+                "status": 1,
+                "message": "Search Result Get Sucessfully",
+                "data": results[0]['COUNT(*)']
             });
         }
     });
