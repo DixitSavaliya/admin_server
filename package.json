@@ -21,7 +21,7 @@
     "dateformat": "^3.0.3",
     "errorhandler": "^1.5.0",
     "express": "^4.16.3",
-    "express-fileupload": "^1.1.5",
+    "express-fileupload": "^1.1.9",
     "express-session": "^1.16.2",
     "extend": "^3.0.2",
     "fcm-node": "^1.5.1",
